@@ -1,0 +1,60 @@
+From 9efbaa165fec64bb832940f752e7f2fe113cdaf8 Mon Sep 17 00:00:00 2001
+From: Joe Jamison <joe@smaklab.com>
+Date: Sun, 1 Aug 2021 12:17:52 -0500
+Subject: [PATCH] Updated AppleTalk/DDP pathnames in /proc/net
+ As of Linux 2.5.41 (Oct-2002), the proc directory entry for
+ AppleTalk was changed from 'appletalk' to 'atalk'. This patch
+ adds checks to see if net-tools is being compiled for Linux,
+ and if compiling against versions greater than 2.5.41, re-defining
+ _PATH_PROCNET_ATALK as "/proc/net/atalk".  Previously,
+ ifconfig would try to access "/proc/net/appletalk", which would
+ result in an ENOENT error on newer Linux systems. The path is
+ left alone for other UNIXes where this may apply.
+
+
+Tested on: net-tools latest w/atalkd 2.2.6, Linux 4.14.240-amd64
+
+Tested-by: Joe Jamison <joe@smaklab.com>
+Signed-off-by: Joe Jamison <joe@smaklab.com>
+---
+ lib/ddp.c       | 2 +-
+ lib/pathnames.h | 9 +++++++++
+ 2 files changed, 10 insertions(+), 1 deletion(-)
+
+diff --git a/lib/ddp.c b/lib/ddp.c
+index d7f8d6b..c8119b0 100644
+--- a/lib/ddp.c
++++ b/lib/ddp.c
+@@ -59,7 +59,7 @@ struct aftype ddp_aftype =
+     ddp_print, ddp_sprint, NULL, NULL,
+     NULL /*DDP_rprint */ , NULL, NULL,
+     -1,
+-    "/proc/net/appletalk"
++    _PATH_PROCNET_ATALK
+ };
+ 
+ #endif
+diff --git a/lib/pathnames.h b/lib/pathnames.h
+index 386d917..35e74d5 100644
+--- a/lib/pathnames.h
++++ b/lib/pathnames.h
+@@ -38,7 +38,16 @@
+ #define _PATH_PROCNET_IPX_SOCKET2	"/proc/net/ipx"
+ #define _PATH_PROCNET_IPX_ROUTE1	"/proc/net/ipx/route"
+ #define _PATH_PROCNET_IPX_ROUTE2	"/proc/net/ipx_route"
++#ifdef __linux__
++#include <linux/version.h>
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,5,41)
++#define _PATH_PROCNET_ATALK		"/proc/net/atalk"
++#else
+ #define _PATH_PROCNET_ATALK		"/proc/net/appletalk"
++#endif
++#else
++#define _PATH_PROCNET_ATALK		"/proc/net/appletalk"
++#endif
+ #define _PATH_PROCNET_IP_BLK		"/proc/net/ip_block"
+ #define _PATH_PROCNET_IP_FWD		"/proc/net/ip_forward"
+ #define _PATH_PROCNET_IP_ACC		"/proc/net/ip_acct"
+-- 
+2.20.1
+
